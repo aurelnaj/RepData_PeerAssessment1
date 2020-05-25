@@ -1,25 +1,124 @@
 ---
 title: "Reproducible Research: Peer Assessment 1"
-output: 
-  html_document:
-    keep_md: true
+output: html_document
+keep_md: true
 ---
 
 
 ## Loading and preprocessing the data
 
+```{r readdata, echo=TRUE}
+
+data <- read.csv("activity.csv", na.strings = "NA")
+```
 
 
 ## What is mean total number of steps taken per day?
 
+1. Total number of steps taken per day
+```{r totalsteps, echo=TRUE}
+## Group the data by day and compute the sum on each steps
+library(dplyr)
+data1 <- group_by(data, date)%>% summarize(total_steps = sum(steps))
+```
+
+2. Histogram of the total number of steps taken each day
+```{r histogram, echo=TRUE}
+
+## Plotting
+## png(filename="plot1.png",width=480,height=480)
+with(data1, hist(total_steps, main = "Total number of steps taken each day"))
+## dev.off()
+```
+
+3. **mean** and **median** total number of steps taken per day
+```{r meanandmedian, echo=TRUE}
+mean <- mean(data1$total_steps, na.rm = TRUE)
+median <- median(data1$total_steps, na.rm = TRUE)
+```
+
+The mean and median of total number of steps taken per day are respectively `r mean` and `r median`.
 
 
 ## What is the average daily activity pattern?
 
+1. Time series plot of the 5-minute interval and the average number of steps taken, averaged across all days.
+
+```{r scatterplot, echo=TRUE}
+library(ggplot2)
+## png(filename="plot2.png",width=480,height=480)
+qplot(interval, steps, data = data, geom = "line", xlab= " 5-minute interval", ylab = "number of steps taken")
+## dev.off()
+```
+
+2. 5-minute interval, on average across all the days in the dataset, which contains the maximum number of steps
+
+```{r maxstep, echo=TRUE}
+maxint <- data$interval[which.max(data$steps)]
+```
+The 5-minute interval, on average across all the days in the dataset, which contains the maximum number of steps is `r maxint`
 
 
 ## Imputing missing values
 
+1. Total number of missing values in the dataset 
 
+```{r missvalue,echo=TRUE}
+total_miss_value <- length(which(is.na(data$steps)))
+```
+
+The total number of missing values in the dataset is `r total_miss_value`.
+
+2. Strategy for filling in all of the missing values in the dataset and new dataset
+
+```{r fillingmissingvalue,echo=TRUE}
+mediansteps <- median(data$steps, na.rm = TRUE)
+ind.na <- which(is.na(data$steps),arr.ind=TRUE)
+newdata <- data 
+newdata$steps[ind.na] <- rep(mediansteps, n=total_miss_value)
+```
+
+3. Histogram of the total number of steps taken each day
+
+```{r histogram2, echo=TRUE}
+
+## Group the data by day and compute the sum on each steps
+library(dplyr)
+data2 <- group_by(newdata, date)%>% summarize(total_steps = sum(steps))
+## Plotting
+## png(filename="plot3.png",width=480,height=480)
+with(data2, hist(total_steps, main = "Total number of steps taken each day"))
+## dev.off()
+```
+4. New **mean** and **median** total number of steps taken per day
+```{r meanandmedian2, echo=TRUE}
+mean1 <- mean(data2$total_steps, na.rm = TRUE)
+median1 <- median(data2$total_steps, na.rm = TRUE)
+```
+
+The new mean and median of total number of steps taken per day are respectively `r mean1` and `r median1`.
 
 ## Are there differences in activity patterns between weekdays and weekends?
+
+1. New factor variable in the dataset with two levels -- "weekday" and "weekend".
+
+```{r newvariable,echo=TRUE}
+## Create a new column of weekdays in the dataset
+data$date <- as.Date(data$date, format = "%Y-%m-%d")
+data$days <- format(data$date, "%A")
+days = c("lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche")
+weekdays= rep(c("weekday","weekend"), c(5,2))
+df <- data.frame(days, weekdays)
+mdata <- merge(data, df)
+```
+
+2. Time series plot of the 5-minute interval and the average number of steps taken, averaged across all days.
+
+```{r scatterplot2, echo=TRUE}
+library(ggplot2)
+## png(filename="plot4.png",width=480,height=480)
+qplot(interval, steps, data = mdata, geom = "line", facets = weekdays ~ ., xlab= " 5-minute interval", ylab = "number of steps taken")
+## dev.off()
+```
+
+
